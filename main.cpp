@@ -8,7 +8,7 @@ std::vector<std::string> list_directory_relative_to_home() {
     const auto home_path = std::filesystem::path(std::getenv("HOME"));
     const auto current_path = std::filesystem::current_path();
     for (const auto &entry: std::filesystem::directory_iterator(current_path)) {
-        auto relative_path = std::filesystem::relative(entry.path(), home_path);
+        const auto relative_path = std::filesystem::relative(entry.path(), home_path);
         result.push_back("~/" + relative_path.string());
     }
     return result;
