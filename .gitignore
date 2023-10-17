@@ -1,0 +1,34 @@
+# CMake build files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+/cmake-build-debug
+
+# CMake user files
+CMakeUserPresets.json
+
+# CMake generated files
+*.cmake
+
+# Ninja build files
+build/
+.ninja*
+rules.ninja
+.ninja_deps
+
+# IDEs
+.idea/
+.vscode/
+
+# Object files
+*.o
+*.obj
+
+# Executables
+*.exe
+*.out
+
+# Libraries
+*.so
+*.
