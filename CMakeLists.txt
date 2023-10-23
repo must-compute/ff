@@ -5,7 +5,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(Curses REQUIRED)
 
-add_executable(ff main.cpp single_include/tui/tui.hpp)
+add_executable(ff main.cpp)
 
 target_link_libraries(ff PRIVATE ${CURSES_LIBRARIES})
 target_include_directories(ff PRIVATE ${CURSES_INCLUDE_DIR})
+
