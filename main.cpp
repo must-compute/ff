@@ -15,7 +15,7 @@ struct SearchResult {
 };
 
 struct RipgrepSearch {
-    std::map<int, SearchResult> search(const std::string &pattern) {
+    static std::map<int, SearchResult> search(const std::string &pattern) {
         // the output we expect looks like this:
         // file1.txt:25
         // file2.txt:22
@@ -52,7 +52,7 @@ struct RipgrepSearch {
 };
 
 struct FFSearch {
-    std::map<int, SearchResult> search(const std::string &pattern) {
+    static std::map<int, SearchResult> search(const std::string &pattern) {
         // TODO implement me
         // ???
         return std::map<int, SearchResult>{};
