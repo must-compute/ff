@@ -14,41 +14,58 @@ struct SearchResult {
     std::string match;
 };
 
+struct RipgrepSearch {
+    std::map<int, SearchResult> search(const std::string &pattern) {
+        // the output we expect looks like this:
+        // file1.txt:25
+        // file2.txt:22
+        // etc
+        // rg reports multiple matches within the same line as separate results. Hence the pipe to `uniq`
+        std::string cmd = "rg -o -n --no-heading " + pattern + " | uniq";
+        std::map<int, SearchResult> results;
+        char buffer[128];
+        FILE *fp = popen(cmd.c_str(), "r");
+        int index = 0;
 
-std::map<int, SearchResult> run_rg(const std::string &pattern) {
-    // the output we expect looks like this:
-    // file1.txt:25
-    // file2.txt:22
-    // etc
-    // rg reports multiple matches within the same line as separate results. Hence the pipe to `uniq`
-    std::string cmd = "rg -o -n --no-heading " + pattern + " | uniq";
-    std::map<int, SearchResult> results;
-    char buffer[128];
-    FILE *fp = popen(cmd.c_str(), "r");
-    int index = 0;
+        if (fp == nullptr) {
+            std::cerr << "Failed to run command\n";
+            return {};
+        }
 
-    if (fp == nullptr) {
-        std::cerr << "Failed to run command\n";
-        return {};
+        while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+            std::string output = buffer;
+            std::istringstream iss(output);
+            SearchResult result;
+
+            std::getline(iss, result.filepath, ':');
+            std::string line_number_str;
+            std::getline(iss, line_number_str, ':');
+            result.line_number = std::stoi(line_number_str);
+            std::getline(iss, result.match);
+
+            results[index++] = result;
+        }
+
+        pclose(fp);
+        return results;
     }
+};
 
-    while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
-        std::string output = buffer;
-        std::istringstream iss(output);
-        SearchResult result;
-
-        std::getline(iss, result.filepath, ':');
-        std::string line_number_str;
-        std::getline(iss, line_number_str, ':');
-        result.line_number = std::stoi(line_number_str);
-        std::getline(iss, result.match);
-
-        results[index++] = result;
+struct FFSearch {
+    std::map<int, SearchResult> search(const std::string &pattern) {
+        // TODO implement me
+        // ???
+        return std::map<int, SearchResult>{};
     }
+};
 
-    pclose(fp);
-    return results;
-}
+template<typename SearchPolicy>
+struct SearchContext {
+    std::map<int, SearchResult> run_search(const std::string &pattern) {
+        SearchPolicy policy;
+        return policy.search(pattern);
+    }
+};
 
 int main(int argc, char *argv[]) {
     std::string query;
@@ -74,7 +91,8 @@ int main(int argc, char *argv[]) {
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
 
-        auto results = run_rg(query);
+        SearchContext<RipgrepSearch> rgContext;
+        auto results = rgContext.run_search(query);
         auto highlighted_result = results[highlight];
 
         // TODO start numbering at 1, not 0
