@@ -131,6 +131,7 @@ int main(int argc, char *argv[]) {
         mvprintw(MAX_DISPLAY, max_x - strlen(position_status), position_status);
 
         // preview file content of highlighted result:
+        // TODO add line numbers
         std::ifstream file(highlighted_result.filepath);
         std::string line;
         int current_line = 1;
