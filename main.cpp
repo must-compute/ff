@@ -1,53 +1,69 @@
-#include <filesystem>
-#include <vector>
+#include <map>
 #include <string>
 #include <ncurses.h>
 #include <optional>
 #include <fstream>
 #include <sstream>
-#include <unordered_map>
+#include <cstdlib>
+#include <cstdio>
+#include <iostream>
 
-std::vector<std::string> list_directory() {
-    std::vector<std::string> result;
-    for (const auto &entry: std::filesystem::directory_iterator(std::filesystem::current_path())) {
-        result.push_back(entry.path().string());
+struct SearchResult {
+    std::string filepath;
+    int line_number{};
+    std::string match;
+};
+
+
+std::map<int, SearchResult> run_rg(const std::string &pattern) {
+    // the output we expect looks like this:
+    // file1.txt:25
+    // file2.txt:22
+    // etc
+    // rg reports multiple matches within the same line as separate results. Hence the pipe to `uniq`
+    std::string cmd = "rg -o -n --no-heading " + pattern + " | uniq";
+    std::map<int, SearchResult> results;
+    char buffer[128];
+    FILE *fp = popen(cmd.c_str(), "r");
+    int index = 0;
+
+    if (fp == nullptr) {
+        std::cerr << "Failed to run command\n";
+        return {};
     }
-    return result;
+
+    while (fgets(buffer, sizeof(buffer), fp) != nullptr) {
+        std::string output = buffer;
+        std::istringstream iss(output);
+        SearchResult result;
+
+        std::getline(iss, result.filepath, ':');
+        std::string line_number_str;
+        std::getline(iss, line_number_str, ':');
+        result.line_number = std::stoi(line_number_str);
+        std::getline(iss, result.match);
+
+        results[index++] = result;
+    }
+
+    pclose(fp);
+    return results;
 }
 
-std::unordered_map<std::string, std::optional<std::string>> read_directory_files() {
-    std::unordered_map<std::string, std::optional<std::string>> result;
-    const auto current_path = std::filesystem::current_path();
-
-    for (const auto &entry: std::filesystem::directory_iterator(current_path)) {
-        if (std::filesystem::is_regular_file(entry.status())) {
-            std::ifstream file(entry.path(), std::ios::binary);
-            if (file) {
-                std::stringstream ss;
-                ss << file.rdbuf();
-                result[entry.path().string()] = ss.str();
-            } else {
-                result[entry.path().string()] = std::nullopt;
-            }
-        }
+int main(int argc, char *argv[]) {
+    std::string query;
+    if (argc > 1) {
+        // TODO we currently assume only one arg (representing the search query) will be provided
+        query = argv[1];
     }
-    return result;
-}
 
-int main() {
+    // ncurses setup
     initscr();
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);
 
-    auto itemContent = read_directory_files();
-    std::vector<std::string> items;
-
-    items.reserve(itemContent.size());
-    for (const auto &pair: itemContent) {
-        items.push_back(pair.first);
-    }
-
+    // result file list setup
     int highlight = 0;
     int choice;
     int offset = 0;
@@ -57,23 +73,64 @@ int main() {
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
 
-        auto position_status = std::to_string(highlight).append("/").append(
-                std::to_string(items.size() - 1)).c_str();
+        auto results = run_rg(query);
+        auto highlighted_result = results[highlight];
 
+        // TODO start numbering at 1, not 0
+        auto position_status = std::to_string(highlight).append("/").append(
+                std::to_string(results.size() - 1)).c_str();
+
+        // display scrollable result list
         for (int i = 0; i < MAX_DISPLAY; ++i) {
             if (i + offset == highlight) {
                 attron(A_REVERSE);
             }
-            mvprintw(i, 0, items[i + offset].c_str());
+            auto curr_result = results[i + offset];
+            auto path_and_line_num = curr_result.filepath.append(":").append(std::to_string(curr_result.line_number));
+            mvprintw(i, 0, path_and_line_num.c_str());
             attroff(A_REVERSE);
         }
 
+        // display horizontal divider and scroll position
         mvhline(MAX_DISPLAY, 0, 0, max_x - strlen(position_status) - 1);
         mvprintw(MAX_DISPLAY, max_x - strlen(position_status), position_status);
 
-        auto content = itemContent[items[highlight]] ? *itemContent[items[highlight]] : "NOT A TEXT FILE";
-        mvprintw(MAX_DISPLAY + 1, 0, "Preview: %s", content.substr(0, 1000).c_str());
+        // preview file content of highlighted result:
+        std::ifstream file(highlighted_result.filepath);
+        std::string line;
+        int current_line = 1;
 
+        start_color();
+        init_pair(1, COLOR_BLACK, COLOR_YELLOW);
+
+        if (file.is_open()) {
+            while (std::getline(file, line) && current_line <= highlighted_result.line_number + 2) {
+                if (current_line >= highlighted_result.line_number - 2) {
+                    if (current_line == highlighted_result.line_number) {
+                        std::string::size_type start = 0;
+                        while ((start = line.find(highlighted_result.match, start)) != std::string::npos) {
+                            std::string pre_match = line.substr(0, start);
+                            std::string post_match = line.substr(start + highlighted_result.match.size());
+                            line = post_match;
+                            printw("%s", pre_match.c_str());
+                            attron(COLOR_PAIR(1));
+                            printw("%s", highlighted_result.match.c_str());
+                            attroff(COLOR_PAIR(1));
+                            start = 0;
+                        }
+                        printw("%s", line.c_str());
+                    } else {
+                        printw("%s", line.c_str());
+                    }
+                    printw("\n");
+                }
+                ++current_line;
+            }
+            file.close();
+        }
+        // end result preview
+
+        // handle keyboard input:
         choice = getch();
 
         switch (choice) {
@@ -88,7 +145,7 @@ int main() {
                 refresh();
                 break;
             case KEY_DOWN:
-                if (highlight < items.size() - 1) {
+                if (highlight < results.size() - 1) {
                     ++highlight;
                     if (highlight - offset >= MAX_DISPLAY) {
                         ++offset;
@@ -99,7 +156,7 @@ int main() {
                 break;
             case 10: // Enter key
                 endwin();
-                std::system(("vim " + items[highlight]).c_str());
+                std::system(("vim " + results[highlight].filepath).c_str());
                 initscr();
                 noecho();
                 keypad(stdscr, TRUE);
@@ -111,6 +168,7 @@ int main() {
 
         if (choice == 'q') break;
     }
+    // end handle keyboard input
 
     endwin();
     return 0;
