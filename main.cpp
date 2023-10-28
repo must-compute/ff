@@ -68,10 +68,25 @@ struct SearchContext {
 };
 
 int main(int argc, char *argv[]) {
-    std::string query;
-    if (argc > 1) {
-        // TODO we currently assume only one arg (representing the search query) will be provided
-        query = argv[1];
+    std::string query, policy;
+    if (argc > 2) {
+        // TODO we currently assume only two args:
+        //  1. the first arg specifies the search policy (rg or ff)
+        //  1. the second arg specifies teh search query
+        policy = argv[1];
+        query = argv[2];
+    }
+
+    std::map<int, SearchResult> results{};
+    if (policy == "rg") {
+        SearchContext<RipgrepSearch> rgContext;
+        results = rgContext.run_search(query);
+    } else if (policy == "ff") {
+        SearchContext<FFSearch> ffContext;
+        results = ffContext.run_search(query);
+    } else {
+        std::cerr << "Usage: " << "ff <policy> <query>" << std::endl;
+        std::exit(1);
     }
 
     // ncurses setup
@@ -91,8 +106,6 @@ int main(int argc, char *argv[]) {
         int max_y, max_x;
         getmaxyx(stdscr, max_y, max_x);
 
-        SearchContext<RipgrepSearch> rgContext;
-        auto results = rgContext.run_search(query);
         auto highlighted_result = results[highlight];
 
         // TODO start numbering at 1, not 0
