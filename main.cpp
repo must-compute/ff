@@ -81,6 +81,7 @@ int main(int argc, char *argv[]) {
                 std::to_string(results.size() - 1)).c_str();
 
         // display scrollable result list
+        // TODO handle case when results count < MAX_DISPLAY
         for (int i = 0; i < MAX_DISPLAY; ++i) {
             if (i + offset == highlight) {
                 attron(A_REVERSE);
