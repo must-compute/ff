@@ -70,11 +70,14 @@ struct SearchContext {
 int main(int argc, char *argv[]) {
     std::string query, policy;
     if (argc > 2) {
-        // TODO we currently assume only two args:
+        // We currently assume only two args:
         //  1. the first arg specifies the search policy (rg or ff)
         //  1. the second arg specifies teh search query
         policy = argv[1];
         query = argv[2];
+    } else {
+        std::cerr << "Usage: " << "ff <policy> <query>" << std::endl;
+        std::exit(1);
     }
 
     std::map<int, SearchResult> results{};
