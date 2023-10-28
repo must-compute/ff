@@ -111,9 +111,8 @@ int main(int argc, char *argv[]) {
 
         auto highlighted_result = results[highlight];
 
-        // TODO start numbering at 1, not 0
-        auto position_status = std::to_string(highlight).append("/").append(
-                std::to_string(results.size() - 1)).c_str();
+        auto position_status = std::to_string(highlight + 1).append("/").append(
+                std::to_string(results.size())).c_str();
 
         // display scrollable result list
         // TODO handle case when results count < MAX_DISPLAY
