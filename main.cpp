@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
     noecho();
     keypad(stdscr, TRUE);
     curs_set(0);
+    start_color();
 
     // result file list setup
     int highlight = 0;
@@ -101,7 +102,6 @@ int main(int argc, char *argv[]) {
         std::string line;
         int current_line = 1;
 
-        start_color();
         init_pair(1, COLOR_BLACK, COLOR_YELLOW);
 
         if (file.is_open()) {
