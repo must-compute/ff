@@ -131,17 +131,22 @@ int main(int argc, char *argv[]) {
         mvprintw(MAX_DISPLAY, max_x - strlen(position_status), position_status);
 
         // preview file content of highlighted result:
-        // TODO add line numbers
         std::ifstream file(highlighted_result.filepath);
         std::string line;
         int current_line = 1;
 
         init_pair(1, COLOR_BLACK, COLOR_YELLOW);
+        init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(3, COLOR_WHITE, COLOR_BLACK);
 
         if (file.is_open()) {
             while (std::getline(file, line) && current_line <= highlighted_result.line_number + 2) {
                 if (current_line >= highlighted_result.line_number - 2) {
                     if (current_line == highlighted_result.line_number) {
+                        attron(COLOR_PAIR(2) | A_BOLD);
+                        printw("%02d ", current_line);
+                        attroff(COLOR_PAIR(2) | A_BOLD);
+                        printw("%s", line.c_str());
                         std::string::size_type start = 0;
                         while ((start = line.find(highlighted_result.match, start)) != std::string::npos) {
                             std::string pre_match = line.substr(0, start);
@@ -155,6 +160,9 @@ int main(int argc, char *argv[]) {
                         }
                         printw("%s", line.c_str());
                     } else {
+                        attron(COLOR_PAIR(3) | A_BOLD | A_DIM);
+                        printw("%02d ", current_line);
+                        attroff(COLOR_PAIR(3) | A_BOLD | A_DIM);
                         printw("%s", line.c_str());
                     }
                     printw("\n");
