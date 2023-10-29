@@ -146,7 +146,7 @@ int main(int argc, char *argv[]) {
                         attron(COLOR_PAIR(2) | A_BOLD);
                         printw("%02d ", current_line);
                         attroff(COLOR_PAIR(2) | A_BOLD);
-                        printw("%s", line.c_str());
+//                        printw("%s", line.c_str());
                         std::string::size_type start = 0;
                         while ((start = line.find(highlighted_result.match, start)) != std::string::npos) {
                             std::string pre_match = line.substr(0, start);
