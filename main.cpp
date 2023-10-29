@@ -1,5 +1,6 @@
 #include <map>
 #include <string>
+#include <format>
 #include <ncurses.h>
 #include <optional>
 #include <fstream>
@@ -176,40 +177,34 @@ int main(int argc, char *argv[]) {
         // handle keyboard input:
         choice = getch();
 
-        switch (choice) {
-            case KEY_UP:
-                if (highlight > 0) {
-                    --highlight;
-                    if (highlight < offset) {
-                        --offset;
-                    }
+        if (choice == KEY_UP) {
+            if (highlight > 0) {
+                --highlight;
+                if (highlight < offset) {
+                    --offset;
                 }
-                clear();
-                refresh();
-                break;
-            case KEY_DOWN:
-                if (highlight < results.size() - 1) {
-                    ++highlight;
-                    if (highlight - offset >= MAX_DISPLAY) {
-                        ++offset;
-                    }
+            }
+            clear();
+            refresh();
+        } else if (choice == KEY_DOWN) {
+            if (highlight < results.size() - 1) {
+                ++highlight;
+                if (highlight - offset >= MAX_DISPLAY) {
+                    ++offset;
                 }
-                clear();
-                refresh();
-                break;
-            case 10: // Enter key
-                endwin();
-                std::system(("vim " + results[highlight].filepath).c_str());
-                initscr();
-                noecho();
-                keypad(stdscr, TRUE);
-                curs_set(0);
-                break;
-            default:
-                break;
-        }
-
-        if (choice == 'q') break;
+            }
+            clear();
+            refresh();
+        } else if (choice == 10 /* Enter key */ ) {
+            endwin();
+            std::string vim_cmd = std::string("vim +").append(
+                    std::to_string(highlighted_result.line_number)).append(" ").append(highlighted_result.filepath);
+            std::system(vim_cmd.c_str());
+            initscr();
+            noecho();
+            keypad(stdscr, TRUE);
+            curs_set(0);
+        } else if (choice == 'q') break;
     }
     // end handle keyboard input
 
