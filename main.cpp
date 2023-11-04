@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <iostream>
 
+// TODO consider capturing all matches within a line into a single search result
 struct SearchResult {
     std::string filepath;
     int line_number{};
@@ -15,6 +16,8 @@ struct SearchResult {
 };
 
 struct RipgrepSearch {
+
+    // TODO make sure to search both file names + file content (not just file content)
     static std::map<int, SearchResult> search(const std::string &pattern) {
         // the output we expect looks like this:
         // file1.txt:25
@@ -194,6 +197,7 @@ int main(int argc, char *argv[]) {
             clear();
             refresh();
         } else if (choice == 10 /* Enter key */ ) {
+            // TODO refresh search results when back from vim
             endwin();
             std::string vim_cmd = std::string("vim +").append(
                     std::to_string(highlighted_result.line_number)).append(" ").append(highlighted_result.filepath);
