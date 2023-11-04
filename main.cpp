@@ -21,7 +21,7 @@ struct RipgrepSearch {
         // file2.txt:22
         // etc
         // rg reports multiple matches within the same line as separate results. Hence the pipe to `uniq`
-        std::string cmd = "rg -o -n --no-heading " + pattern + " | uniq";
+        std::string cmd = "rg -o -n --smart-case --no-heading " + pattern + " | uniq";
         std::map<int, SearchResult> results;
         char buffer[128];
         FILE *fp = popen(cmd.c_str(), "r");
